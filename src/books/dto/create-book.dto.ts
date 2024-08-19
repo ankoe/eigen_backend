@@ -15,6 +15,5 @@ export class CreateBookDto {
 
   @IsNotEmpty()
   @IsInt()
-  // @Min(min: 1)
   stock: number;
 }

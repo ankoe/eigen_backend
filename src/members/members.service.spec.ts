@@ -6,6 +6,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { CreateMemberDto } from './dto/create-member.dto';
 import { HttpException } from '@nestjs/common';
 import { UpdateMemberDto } from './dto/update-member.dto';
+import { MemberDTO } from './dto/member.dto';
 
 describe('MembersService', () => {
   let service: MembersService;
@@ -92,10 +93,12 @@ describe('MembersService', () => {
   describe('update', () => {
     it('should update and save an existing member', async () => {
       const updateMemberDto: UpdateMemberDto = { name: 'Updated User' };
-      const existingMember = { id: 1, name: 'Updated User' };
+      const existingMember = { id: 1, name: 'Updated User', borrowedBooks: [] };
       const updatedMember = { ...existingMember, ...updateMemberDto };
 
-      jest.spyOn(service, 'findOne').mockResolvedValue(existingMember);
+      jest
+        .spyOn(service, 'findOne')
+        .mockResolvedValue(new MemberDTO(existingMember));
       mockRepository.merge.mockReturnValue(updatedMember);
       mockRepository.save.mockResolvedValue(updatedMember);
 
@@ -113,9 +116,9 @@ describe('MembersService', () => {
 
   describe('remove', () => {
     it('should soft remove an existing member', async () => {
-      const member = { id: 1, name: 'John Doe' };
+      const member = { id: 1, name: 'John Doe', borrowedBooks: [] };
 
-      jest.spyOn(service, 'findOne').mockResolvedValue(member);
+      jest.spyOn(service, 'findOne').mockResolvedValue(new MemberDTO(member));
       mockRepository.softRemove.mockResolvedValue(member);
 
       const result = await service.remove(1);

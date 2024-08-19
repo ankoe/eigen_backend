@@ -1,7 +1,10 @@
+import { Exclude } from 'class-transformer';
+import { Borrow } from '../../borrows/entities/borrow.entity';
 import {
   Column,
   DeleteDateColumn,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -19,14 +22,12 @@ export class Member {
   @Column({ type: 'date', nullable: true })
   penaltyEndDate?: Date;
 
-  // @OneToMany(() => Borrow, (borrow) => borrow.member)
-  // borrowedBooks: Borrow[];
+  @OneToMany(() => Borrow, (borrow) => borrow.member)
+  borrowedBooks: Borrow[];
 
+  @Exclude()
   @DeleteDateColumn()
   deletedAt?: Date;
-
-  // borrowedBooks: string[] = [];
-  // penaltyEndDate?: Date;
 
   // @AfterInsert()
   // async generateCode() {

@@ -114,6 +114,7 @@ describe('BooksService', () => {
         title: 'New Book',
         author: 'Author',
         stock: 1,
+        borrows: [],
       };
       const updatedBook = { ...existingBook, ...updateBookDto };
 
@@ -141,6 +142,7 @@ describe('BooksService', () => {
         title: 'New Book',
         author: 'Author',
         stock: 1,
+        borrows: [],
       };
 
       jest.spyOn(service, 'findOne').mockResolvedValue(book);
