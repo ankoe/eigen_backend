@@ -62,15 +62,14 @@ export class MembersService {
 
   async addBorrowedBooks(id: number, createBorrowDto: CreateBorrowDto) {
     const existingMember = await this.findOne(id);
-    return existingMember
-      ? await this.borrowsService.findByMember(existingMember.id)
-      : [];
+    return this.borrowsService.borrowBook(
+      existingMember.id,
+      createBorrowDto.bookId,
+    );
   }
 
   async returnBorrowedBooks(memberId: number, bookId: number) {
     const existingMember = await this.findOne(memberId);
-    return existingMember
-      ? await this.borrowsService.returnBook(existingMember.id, bookId)
-      : [];
+    return await this.borrowsService.returnBook(existingMember.id, bookId);
   }
 }

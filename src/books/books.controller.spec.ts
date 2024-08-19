@@ -54,7 +54,6 @@ describe('BooksController', () => {
     service = module.get<BooksService>(BooksService);
     repository = module.get<Repository<Book>>(getRepositoryToken(Book));
 
-    // Mocking service methods
     jest
       .spyOn(service, 'create')
       .mockImplementation(async (dto: CreateBookDto) => {

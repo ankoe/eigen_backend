@@ -28,13 +28,4 @@ export class Member {
   @Exclude()
   @DeleteDateColumn()
   deletedAt?: Date;
-
-  // @AfterInsert()
-  // async generateCode() {
-  //   if (!this.code) {
-  //     console.log('This method runs after an insert operation');
-  //     this.code = `M${this.id.toString().padStart(3, '0')}`;
-  //     console.log(this.id, this.code);
-  //   }
-  // }
 }

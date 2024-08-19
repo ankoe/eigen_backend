@@ -14,10 +14,10 @@ describe('BooksService', () => {
   const mockRepository = {
     create: jest.fn(),
     save: jest.fn(),
-    find: jest.fn(),
     findOneBy: jest.fn(),
     merge: jest.fn(),
     softRemove: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -33,6 +33,10 @@ describe('BooksService', () => {
 
     service = module.get<BooksService>(BooksService);
     repository = module.get<Repository<Book>>(getRepositoryToken(Book));
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should be defined', () => {
@@ -62,28 +66,55 @@ describe('BooksService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of books', async () => {
-      const books = [
-        {
-          id: 1,
-          code: 'JK-121',
-          title: 'New Book',
-          author: 'Author',
-          stock: 1,
-        },
-      ];
-      mockRepository.find.mockResolvedValue(books);
+    it('should return an array of books with correct stock after borrow calculation', async () => {
+      const createQueryBuilder: any = {
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        groupBy: jest.fn().mockReturnThis(),
+        getRawMany: jest.fn().mockResolvedValue([
+          {
+            id: 1,
+            title: 'Book 1',
+            author: 'Author 1',
+            stock: 5,
+            count: '2',
+          },
+          {
+            id: 2,
+            title: 'Book 2',
+            author: 'Author 2',
+            stock: 3,
+            count: '1',
+          },
+        ]),
+      };
+
+      mockRepository.createQueryBuilder.mockReturnValue(createQueryBuilder);
 
       const result = await service.findAll();
 
-      expect(repository.find).toHaveBeenCalled();
-      expect(result).toEqual(books);
+      expect(mockRepository.createQueryBuilder).toHaveBeenCalled();
+      expect(result).toEqual([
+        {
+          id: 1,
+          title: 'Book 1',
+          author: 'Author 1',
+          stock: 3,
+        },
+        {
+          id: 2,
+          title: 'Book 2',
+          author: 'Author 2',
+          stock: 2,
+        },
+      ]);
     });
   });
 
   describe('findOne', () => {
     it('should return a book by ID', async () => {
       const book = {
+        id: 1,
         code: 'JK-121',
         title: 'New Book',
         author: 'Author',

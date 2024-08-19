@@ -1,9 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Borrow } from './entities/borrow.entity';
-import { Member } from 'src/members/entities/member.entity';
-import { Book } from 'src/books/entities/book.entity';
+import { Member } from '../members/entities/member.entity';
+import { Book } from '../books/entities/book.entity';
 
 @Injectable()
 export class BorrowsService {
@@ -23,29 +23,30 @@ export class BorrowsService {
     });
   }
 
-  async borrowBook(memberCode: string, bookCode: string): Promise<string> {
+  async borrowBook(memberId: number, bookId: number) {
     const member = await this.memberRepository.findOne({
-      where: { code: memberCode },
+      where: { id: memberId },
       relations: ['borrowedBooks'],
     });
     const book = await this.bookRepository.findOne({
-      where: { code: bookCode },
+      where: { id: bookId },
       relations: ['borrows'],
     });
-    if (!member || !book) return 'Member or book not found';
+    if (!member || !book)
+      throw new HttpException('Member or book not found', 404);
     if (member.penaltyEndDate && member.penaltyEndDate > new Date())
-      return 'Member is currently penalized';
-    if (member.borrowedBooks.length >= 2)
-      return 'Member cannot borrow more than 2 books';
+      throw new HttpException('Member is currently penalized', 403);
+    if (member.borrowedBooks.length >= 2) {
+      throw new HttpException('Member cannot borrow more than 2 books', 403);
+    }
     if (book.borrows.some((borrow) => !borrow.returnDate))
-      return 'Book is already borrowed';
+      throw new HttpException('Book is already borrowed', 403);
     const borrow = this.borrowRepository.create({
       member,
       book,
       borrowDate: new Date(),
     });
-    await this.borrowRepository.save(borrow);
-    return 'Book borrowed successfully';
+    return await this.borrowRepository.save(borrow);
   }
 
   async returnBook(memberId: number, bookId: number) {
@@ -57,36 +58,26 @@ export class BorrowsService {
       where: { id: bookId },
       relations: ['borrows'],
     });
-    if (!member || !book) return 'Member or book not found';
+    if (!member || !book)
+      throw new HttpException('Member or book not found', 404);
+
     const borrow = await this.borrowRepository.findOne({
       where: { member, book, returnDate: null },
     });
     if (!borrow) return 'This book was not borrowed by the member';
-    borrow.returnDate = new Date();
-    await this.borrowRepository.save(borrow);
+
     const borrowDuration =
-      (borrow.returnDate.getTime() - borrow.borrowDate.getTime()) /
+      (new Date().getTime() - borrow.borrowDate.getTime()) /
       (1000 * 60 * 60 * 24);
+
     if (borrowDuration > 7) {
       member.penaltyEndDate = new Date(
-        borrow.returnDate.getTime() + 3 * 24 * 60 * 60 * 1000,
+        new Date().getTime() + 3 * 24 * 60 * 60 * 1000,
       );
       await this.memberRepository.save(member);
     }
-    return 'Book returned successfully';
-  }
 
-  async checkBooks(): Promise<Book[]> {
-    const books = await this.bookRepository.find({ relations: ['borrows'] });
-    return books.filter(
-      (book) => !book.borrows.some((borrow) => !borrow.returnDate),
-    );
-  }
-
-  async checkMembers(): Promise<Member[]> {
-    const members = await this.memberRepository.find({
-      relations: ['borrowedBooks'],
-    });
-    return members;
+    borrow.returnDate = new Date();
+    return await this.borrowRepository.save(borrow);
   }
 }

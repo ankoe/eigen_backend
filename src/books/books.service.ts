@@ -18,13 +18,31 @@ export class BooksService {
   }
 
   async findAll() {
-    return await this.bookRepository.find();
+    const books = await this.bookRepository
+      .createQueryBuilder('book')
+      .leftJoinAndSelect('book.borrows', 'borrow', 'borrow.returnDate IS NULL')
+      .select([
+        'book.id AS id',
+        'book.title AS title',
+        'book.author AS author',
+        'book.stock AS stock',
+        'COUNT(borrow.id) AS count',
+      ])
+      .groupBy('book.id')
+      .getRawMany();
+
+    return books.map((book) => ({
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      stock: book.stock - parseInt(book.count, 10),
+    }));
   }
 
   async findOne(id: number) {
-    const bookData = await this.bookRepository.findOneBy({ id });
-    if (!bookData) throw new HttpException('Book Not Found', 404);
-    return bookData;
+    const existingBook = await this.bookRepository.findOneBy({ id });
+    if (!existingBook) throw new HttpException('Book Not Found', 404);
+    return existingBook;
   }
 
   async update(id: number, updateBookDto: UpdateBookDto) {
